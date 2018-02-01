@@ -12,30 +12,26 @@ check_server() {
 
 }
 check_server
-
-mysql_slave_server='192.168.1.105'
-mysql_user='mysql105'
-mysql_pass='mysql105'
+mysql_slave_server='192.168.11.205'
+#建立账号并授权
+mysql_user='root'
+mysql_pass='root'
 
 check_mysql_server() {
-	port_status=$(nmap -p 3306 ${mysql_slave_server}|grep '3306'|awk'{print $2}')
-	if [ "${port_status}" = "open" ];
+	port_status=$(nmap -p 3306 ${mysql_slave_server}|grep '3306'|awk '{print $2}')
+	if [ "${port_status}" == "open" ];
 	then
 		echo -e '\E[1;32m' "Connect ${mysql_slave_server} OK." ${reset_terminal}
-	io_status=$(mysql -u${mysql_user} -p${mysql_pass} -h${mysql_slave_server} -e "show slave status\G"|grep -iw 'slave_io_running'|awk '{print $2}')
-		if [ "${io_status}" = "NO" -o "${io_status}" = "No" ]
+	io_status=$(mysql -u${mysql_user} -p${mysql_pass} -e "show slave status\G" 2>/dev/null |grep -iw 'slave_io_running'|awk '{print $2}')
+		if [ "${io_status}" = "Yes" ]
 		then
-			echo -e '\E[1;32m' "Slave thread is not running." ${reset_terminal}
+			mysql -u${mysql_user} -p${mysql_pass}  -e "show slave status\G" 2>/dev/null|grep -iw "seconds_behind_master"|sed 's/[ \t]//g'
 		else
-			seconds_behind_master=$(mysql -u${mysql_user} -p${mysql_pass} -h${mysql_slave_server} -e "show slave status\G"|grep -iw "seconds_behind_master" |sed '/ //g')
-		echo -e '\E[1;32m' "${$seconds_behind_master}" ${reset_terminal}
+			echo -e '\E[1;32m' "Slave thread is not running." ${reset_terminal}
 		fi
 	else
 		echo -e '\E[1;32m' "Connect ${mysql_slave_server} Failed" ${reset_terminal}
 	fi
-
-
-
 
 }
 check_mysql_server
